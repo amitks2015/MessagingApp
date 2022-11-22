@@ -1,21 +1,22 @@
 package com.example.messagingapp.ui
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.messagingapp.ConversationViewModel
 import com.example.messagingapp.R
 import com.example.messagingapp.model.Message
+import com.example.messagingapp.model.MessageDirection
 import com.example.messagingapp.ui.theme.MessagingAppTheme
 import java.text.SimpleDateFormat
 import java.util.*
@@ -82,12 +84,38 @@ fun Message(
     message: Message
 ) {
     val dataFormat = remember{ SimpleDateFormat("hh:mm", Locale.getDefault())}
+    val parentModifier = if(message.direction == MessageDirection.SENT) {
+        modifier.padding(end = 16.dp)
+    } else {
+        modifier.padding(start = 16.dp)
+    }
 
-    Column(modifier = modifier) {
+    var displayTimeSent by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = parentModifier.pointerInput(Unit) {
+            detectTapGestures(
+                onTap = {
+                    displayTimeSent = !displayTimeSent
+                }
+            )
+        }
+    ) {
+        val alignment = if(message.direction == MessageDirection.SENT) {
+            Alignment.End
+        } else {
+            Alignment.Start
+        }
+        val messageBackground = if(message.direction == MessageDirection.SENT) {
+            Color.Cyan
+        } else {
+            Color.Blue
+        }
         Box(
             modifier = Modifier
+                .align(alignment)
                 .background(
-                    Color.LightGray,
+                    messageBackground.copy(alpha = 0.2f),
                     RoundedCornerShape(6.dp)
                 )
                 .padding(8.dp)
@@ -97,11 +125,17 @@ fun Message(
                 message = message
             )
         }
-        Text(
-            modifier = Modifier.padding(top = 8.dp),
-            text = dataFormat.format(message.dateTime.time),
-            fontSize = 12.sp
-        )
+        AnimatedVisibility(
+            modifier = Modifier.align(alignment),
+            visible = displayTimeSent
+        ) {
+            Text(
+                modifier = Modifier
+                    .padding(top = 8.dp),
+                text = dataFormat.format(message.dateTime.time),
+                fontSize = 12.sp
+            )
+        }
     }
 }
 
