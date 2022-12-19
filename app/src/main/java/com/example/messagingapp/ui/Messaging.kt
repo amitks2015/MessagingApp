@@ -1,7 +1,9 @@
 package com.example.messagingapp.ui
 
 import android.graphics.BitmapFactory
+import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -10,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +22,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +46,7 @@ fun Messaging() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Messages(
     modifier: Modifier = Modifier,
@@ -52,17 +57,30 @@ fun Messages(
             modifier = Modifier.fillMaxSize()
         )
     } else {
+        val grouped = groupMessagesByDate(messages)
         LazyColumn(
             modifier = modifier,
             state = rememberLazyListState(),
             contentPadding = PaddingValues(top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(messages) { message ->
-                Message(
-                    modifier = Modifier.fillMaxWidth(),
-                    message = message
-                )
+            grouped.onEachIndexed { index, entry ->
+                stickyHeader {
+                    MessageHeader(
+                        modifier = Modifier.fillMaxWidth(),
+                        isToday = entry.key.isToday(),
+                        date = entry.key
+                    )
+                }
+
+                items(entry.value) { message ->
+                    Message(
+                        modifier = Modifier.fillMaxWidth(),
+                        message = message
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
@@ -76,6 +94,33 @@ fun EmptyConversation(modifier: Modifier = Modifier) {
     ) {
         Text(text = stringResource(id = R.string.label_no_message))
     }
+}
+
+@Composable
+fun MessageHeader(
+    modifier: Modifier,
+    isToday: Boolean,
+    date: Calendar
+) {
+    val label = if(isToday) {
+        stringResource(id = R.string.label_today)
+    } else {
+        val dateFormat = remember {
+            SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+        }
+        dateFormat.format(date.time)
+    }
+
+    Text(
+        modifier = modifier
+            .background(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+            )
+            .padding(vertical = 4.dp),
+        text = label,
+        fontSize = 14.sp,
+        textAlign = TextAlign.Center
+    )
 }
 
 @Composable
@@ -160,6 +205,19 @@ fun MessageBody(
         )
     }
 }
+
+private fun groupMessagesByDate(
+    messages: List<Message>
+): Map<Calendar, List<Message>> = messages.groupBy {
+    it.dateTime.apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+}
+
+private fun Calendar.isToday() = DateUtils.isToday(this.timeInMillis)
 
 @Preview
 @Composable
