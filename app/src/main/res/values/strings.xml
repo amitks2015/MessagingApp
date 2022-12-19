@@ -2,5 +2,6 @@
     <string name="app_name">MessagingApp</string>
     <string name="title_chat">Group Chat</string>
     <string name="label_no_message">No message to display</string>
+    <string name="label_today">Today</string>
     <string name="cd_close_conversation">Close Conversation</string>
 </resources>
